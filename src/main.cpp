@@ -62,7 +62,7 @@ uint64_t unix_timestamp()
 	return (uint64_t)mktime(&timeinfo);
 }
 
-error_t make_test_connect_token(uint64_t unique_client_id, uint8_t* connect_token_buffer)
+error_t make_test_connect_token(uint64_t unique_client_id, const char* address_and_port, uint8_t* connect_token_buffer)
 {
 	crypto_key_t client_to_server_key = crypto_generate_key();
 	crypto_key_t server_to_client_key = crypto_generate_key();
@@ -70,7 +70,7 @@ error_t make_test_connect_token(uint64_t unique_client_id, uint8_t* connect_toke
 	uint64_t expiration_timestamp = current_timestamp + 60; // Token expires in one minute.
 	uint32_t handshake_timeout = 5;
 	const char* endpoints[] = {
-		"[::1]:5000",
+		address_and_port,
 	};
 
 	uint8_t user_data[CUTE_CONNECT_TOKEN_USER_DATA_SIZE];
@@ -102,14 +102,24 @@ void panic(error_t err)
 
 int main(int argc, const char** argv)
 {
+	if (argc != 3) {
+		printf("Incorrect command line. Here's an example for a client.\n\n");
+		printf("\tclient [::1]:5000\n\n");
+		printf("Here is an example for a server.\n\n");
+		printf("\tserver [::1]:5000\n\n");
+		exit(-1);
+	}
+
 	uint32_t options = CUTE_APP_OPTIONS_DEFAULT_GFX_CONTEXT | CUTE_APP_OPTIONS_HIDDEN | CUTE_APP_OPTIONS_WINDOW_POS_CENTERED;
 	app_t* app = app_make("Fancy Window Title", 0, 0, 640, 480, options, argv[0]);
 	error_t err = app_init_net(app);
 	if (err.is_error()) panic(err);
 
 	bool is_server = argc > 1 && !strcmp("server", argv[1]);
+	const char* address_and_port = argv[2];
+	endpoint_t endpoint;
+	endpoint_init(&endpoint, address_and_port);
 
-	const char* address_and_port = "[::1]:5000";
 	server_t* server = NULL;
 	client_t* client = NULL;
 	uint8_t connect_token[CUTE_CONNECT_TOKEN_SIZE];
@@ -123,10 +133,10 @@ int main(int argc, const char** argv)
 		server = server_create(&server_config);
 		err = server_start(server, address_and_port);
 		if (err.is_error()) panic(err);
-		printf("Server started, listening on port 5000.\n");
+		printf("Server started, listening on port %d.\n", (int)endpoint.port);
 	} else {;
-		client = client_make(5000, g_application_id);
-		err = make_test_connect_token(123, connect_token);
+		client = client_make(endpoint.port, g_application_id);
+		err = make_test_connect_token(123, address_and_port, connect_token);
 		if (err.is_error()) panic(err);
 		err = client_connect(client, connect_token);
 		if (err.is_error()) panic(err);
