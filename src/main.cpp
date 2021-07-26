@@ -57,9 +57,8 @@ uint64_t unix_timestamp()
 {
 	time_t ltime;
 	time(&ltime);
-	tm timeinfo;
-	gmtime_s(&timeinfo, &ltime);
-	return (uint64_t)mktime(&timeinfo);
+	tm* timeinfo = gmtime(&ltime);;
+	return (uint64_t)mktime(timeinfo);
 }
 
 error_t make_test_connect_token(uint64_t unique_client_id, const char* address_and_port, uint8_t* connect_token_buffer)
