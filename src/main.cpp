@@ -136,11 +136,12 @@ int main(int argc, const char** argv)
 		printf("Server started, listening on port %d.\n", (int)endpoint.port);
 	} else {;
 		client = client_make(endpoint.port, g_application_id);
-		err = make_test_connect_token(123, address_and_port, connect_token);
+		uint64_t client_id = rand() % 500; // Must be unique for each different player in your game.
+		err = make_test_connect_token(client_id, address_and_port, connect_token);
 		if (err.is_error()) panic(err);
 		err = client_connect(client, connect_token);
 		if (err.is_error()) panic(err);
-		printf("Attempting to connect to server on port 5000.\n");
+		printf("Attempting to connect to server on port %d.\n", (int)endpoint.port);
 	}
 
 	while (app_is_running(app)) {
