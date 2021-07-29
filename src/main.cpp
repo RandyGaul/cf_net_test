@@ -111,6 +111,10 @@ int main(int argc, const char** argv)
 
 	uint32_t options = CUTE_APP_OPTIONS_HIDDEN | CUTE_APP_OPTIONS_WINDOW_POS_CENTERED;
 	app_t* app = app_make("Fancy Window Title", 0, 0, 640, 480, options, argv[0]);
+	if (!app) {
+		printf("Failed to initialize app.\n");
+		exit(-1);
+	}
 	error_t err = app_init_net(app);
 	if (err.is_error()) panic(err);
 
@@ -145,6 +149,7 @@ int main(int argc, const char** argv)
 	
 	printf("here1\n");
 	while (app_is_running(app)) {
+		printf("here aaah\n");
 		float dt = calc_dt();
 		printf("here2\n");
 		uint64_t unix_time = unix_timestamp();
