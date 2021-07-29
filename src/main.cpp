@@ -147,19 +147,13 @@ int main(int argc, const char** argv)
 		printf("Attempting to connect to server on port %d.\n", (int)endpoint.port);
 	}
 	
-	printf("here1\n");
 	while (app_is_running(app)) {
-		printf("here aaah\n");
 		float dt = calc_dt();
-		printf("here2\n");
 		uint64_t unix_time = unix_timestamp();
-		printf("here3\n");
 		app_update(app, dt);
-		printf("here4\n");
 
 		if (is_server) {
 			server_update(server, (double)dt, unix_time);
-			printf("here5\n");
 
 			server_event_t e;
 			while (server_pop_event(server, &e)) {
