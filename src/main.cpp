@@ -109,7 +109,7 @@ int main(int argc, const char** argv)
 		exit(-1);
 	}
 
-	uint32_t options = CUTE_APP_OPTIONS_DEFAULT_GFX_CONTEXT | CUTE_APP_OPTIONS_HIDDEN | CUTE_APP_OPTIONS_WINDOW_POS_CENTERED;
+	uint32_t options = CUTE_APP_OPTIONS_HIDDEN | CUTE_APP_OPTIONS_WINDOW_POS_CENTERED;
 	app_t* app = app_make("Fancy Window Title", 0, 0, 640, 480, options, argv[0]);
 	error_t err = app_init_net(app);
 	if (err.is_error()) panic(err);
@@ -190,8 +190,6 @@ int main(int argc, const char** argv)
 				exit(-1);
 			}
 		}
-
-		app_present(app);
 	}
 
 	app_destroy(app);
