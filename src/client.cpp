@@ -101,11 +101,9 @@ void panic(error_t err)
 
 int main(int argc, const char** argv)
 {
-	if (argc != 3) {
-		printf("Incorrect command line. Here's an example for a client.\n\n");
-		printf("\tclient [::1]:5000\n\n");
-		printf("Here is an example for a server.\n\n");
-		printf("\tserver [::1]:5000\n\n");
+	if (argc != 2) {
+		printf("Incorrect command line. Here's an example to specify the server address.\n\n");
+		printf("\t[::1]:5000\n\n");
 		exit(-1);
 	}
 
@@ -118,81 +116,49 @@ int main(int argc, const char** argv)
 	error_t err = app_init_net(app);
 	if (err.is_error()) panic(err);
 
-	bool is_server = argc > 1 && !strcmp("server", argv[1]);
-	const char* address_and_port = argv[2];
+	const char* address_and_port = argv[1];
 	endpoint_t endpoint;
 	endpoint_init(&endpoint, address_and_port);
 
-	server_t* server = NULL;
-	client_t* client = NULL;
 	uint8_t connect_token[CUTE_CONNECT_TOKEN_SIZE];
-
-	if (is_server) {
-		server_config_t server_config;
-		server_config.application_id = g_application_id;
-		memcpy(server_config.public_key.key, g_public_key_data, sizeof(g_public_key_data));
-		memcpy(server_config.secret_key.key, g_secret_key_data, sizeof(g_secret_key_data));
-
-		server = server_create(&server_config);
-		err = server_start(server, address_and_port);
-		if (err.is_error()) panic(err);
-		printf("Server started, listening on port %d.\n", (int)endpoint.port);
-	} else {;
-		client = client_make(endpoint.port, g_application_id);
-		uint64_t client_id = rand() % 500; // Must be unique for each different player in your game.
-		err = make_test_connect_token(client_id, address_and_port, connect_token);
-		if (err.is_error()) panic(err);
-		err = client_connect(client, connect_token);
-		if (err.is_error()) panic(err);
-		printf("Attempting to connect to server on port %d.\n", (int)endpoint.port);
-	}
+	client_t* client = client_make(0, g_application_id);
+	uint64_t client_id = rand() % 500; // Must be unique for each different player in your game.
+	err = make_test_connect_token(client_id, address_and_port, connect_token);
+	if (err.is_error()) panic(err);
+	err = client_connect(client, connect_token);
+	if (err.is_error()) panic(err);
+	printf("Attempting to connect to server on port %d.\n", (int)endpoint.port);
 	
 	while (app_is_running(app)) {
 		float dt = calc_dt();
 		uint64_t unix_time = unix_timestamp();
 		app_update(app, dt);
 
-		if (is_server) {
-			server_update(server, (double)dt, unix_time);
+		client_update(client, (double)dt, unix_time);
 
-			server_event_t e;
-			while (server_pop_event(server, &e)) {
-				if (e.type == SERVER_EVENT_TYPE_NEW_CONNECTION) {
-					printf("New connection from id %d, on index %d.\n", (int)e.u.new_connection.client_id, e.u.new_connection.client_index);
-				} else if (e.type == SERVER_EVENT_TYPE_PAYLOAD_PACKET) {
-					printf("Got a message from client on index %d, \"%s\"\n", e.u.payload_packet.client_index, (const char*)e.u.payload_packet.data);
-					server_free_packet(server, e.u.payload_packet.client_index, e.u.payload_packet.data);
-				} else if (e.type == SERVER_EVENT_TYPE_DISCONNECTED) {
-					printf("Client disconnected on index %d.\n", e.u.disconnected.client_index);
-				}
+		if (client_state_get(client) == CLIENT_STATE_CONNECTED) {
+			static bool notify = false;
+			if (!notify) {
+				notify = true;
+				printf("Connected! Press ESC to gracefully disconnect.\n");
 			}
-		} else {
-			client_update(client, (double)dt, unix_time);
 
-			if (client_state_get(client) == CLIENT_STATE_CONNECTED) {
-				static bool notify = false;
-				if (!notify) {
-					notify = true;
-					printf("Connected! Press ESC to gracefully disconnect.\n");
-				}
-
-				static float t = 0;
-				t += dt;
-				if (t > 2) {
-					const char* data = "What's up over there, Mr. Server?";
-					int size = (int)strlen(data) + 1;
-					client_send(client, data, size, false);
-					t = 0;
-				}
-
-				if (key_was_pressed(app, KEY_ESCAPE)) {
-					client_disconnect(client);
-					app_stop_running(app);
-				}
-			} else if (client_state_get(client) < 0) {
-				printf("Client encountered an error: %s.\n", client_state_string(client_state_get(client)));
-				exit(-1);
+			static float t = 0;
+			t += dt;
+			if (t > 2) {
+				const char* data = "What's up over there, Mr. Server?";
+				int size = (int)strlen(data) + 1;
+				client_send(client, data, size, false);
+				t = 0;
 			}
+
+			if (key_was_pressed(app, KEY_ESCAPE)) {
+				client_disconnect(client);
+				app_stop_running(app);
+			}
+		} else if (client_state_get(client) < 0) {
+			printf("Client encountered an error: %s.\n", client_state_string(client_state_get(client)));
+			exit(-1);
 		}
 	}
 

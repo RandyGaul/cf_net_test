@@ -21,20 +21,22 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(cute)
 
-# Add source for the game.
 add_executable(
-	cf_net_test
-	src/main.cpp
+	client
+	src/client.cpp
+)
+add_executable(
+	server
+	src/server.cpp
 )
 
-target_include_directories(cf_net_test PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>)
+target_include_directories(client PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>)
+target_include_directories(server PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>)
 
-# Make the game link against Cute Framework.
-target_link_libraries(cf_net_test cute)
+target_link_libraries(client cute)
+target_link_libraries(server cute)
 
-# For convenience set MSVC debugger's working directory in the build folder.
-# Also ask MSVC to set cf_net_test as the startup project.
 if (MSVC)
-	set_property(TARGET cf_net_test PROPERTY VS_DEBUGGER_WORKING_DIRECTORY $<TARGET_FILE_DIR:cf_net_test>)
-	set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT cf_net_test)
+	set_property(TARGET client PROPERTY VS_DEBUGGER_WORKING_DIRECTORY $<TARGET_FILE_DIR:client>)
+	set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT client)
 endif()
