@@ -101,9 +101,9 @@ void panic(error_t err)
 
 int main(int argc, const char** argv)
 {
-	if (argc != 2) {
+	if (argc != 3) {
 		printf("Incorrect command line. Here's an example to specify the server address.\n\n");
-		printf("\t[::1]:5000\n\n");
+		printf("\t4 [::1]:5000\n\n");
 		exit(-1);
 	}
 
@@ -116,13 +116,15 @@ int main(int argc, const char** argv)
 	error_t err = app_init_net(app);
 	if (err.is_error()) panic(err);
 
-	const char* address_and_port = argv[1];
+	// Must be unique for each different player in your game.
+	uint64_t client_id = (uint64_t)atoi(argv[1]);
+
+	const char* address_and_port = argv[2];
 	endpoint_t endpoint;
 	endpoint_init(&endpoint, address_and_port);
 
 	uint8_t connect_token[CUTE_CONNECT_TOKEN_SIZE];
 	client_t* client = client_make(0, g_application_id);
-	uint64_t client_id = rand() % 500; // Must be unique for each different player in your game.
 	err = make_test_connect_token(client_id, address_and_port, connect_token);
 	if (err.is_error()) panic(err);
 	err = client_connect(client, connect_token);
